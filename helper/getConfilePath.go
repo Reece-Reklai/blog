@@ -1,11 +1,11 @@
-package main
+package helper
 
 import (
 	"fmt"
 	"os"
 )
 
-func getConfigFilePath() (string, error) {
+func GetConfigFilePath() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		fmt.Println("Failed to get home directory path")
