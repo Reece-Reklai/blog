@@ -45,7 +45,7 @@ gator agg 30s
 View the posts:
 
 ```bash
-gator browse [limit]
+gator browse
 ```
 
 There are a few other commands you'll need as well:
@@ -54,4 +54,5 @@ There are a few other commands you'll need as well:
 - `gator users` - List all users
 - `gator feeds` - List all feeds
 - `gator follow <url>` - Follow a feed that already exists in the database
+- `gator following <url>` - Shows the current feeds that the user is following 
 - `gator unfollow <url>` - Unfollow a feed that already exists in the database
