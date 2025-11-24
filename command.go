@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/xml"
 	"errors"
 	"fmt"
@@ -225,6 +226,22 @@ func handlerUnFollow(userState *configState, cmd command, user database.User) er
 	return nil
 }
 
+func handlerBrowse(userState *configState, cmd command, user database.User) error {
+	posts, err := userState.db.GetPostForUser(context.Background(), database.GetPostForUserParams{ID: user.ID, Limit: 10})
+	if err != nil {
+		fmt.Printf("%v has not (agg)regate posts\n", user.Name)
+		return err
+	}
+	for _, value := range posts {
+		fmt.Println(value.UserName)
+		fmt.Println(value.FeedName)
+		fmt.Println(value.FeedUrl)
+		fmt.Println(value.PostTitle)
+		fmt.Println("---------")
+	}
+	return nil
+}
+
 func middlewareLoggedIn(handler func(userState *configState, cmd command, user database.User) error) func(*configState, command) error {
 	return func(userState *configState, cmd command) error {
 		userName := userState.cfg.CurrentUserName
@@ -271,7 +288,12 @@ func scrapeFeeds(userState *configState, cmd command) error {
 		fmt.Println("failed to fetch next feed")
 		return err
 	}
-	fmt.Println(currentFeed.Url)
+	user, err := userState.db.GetUserID(context.Background(), currentFeed.UserID)
+	fmt.Printf("User: %v -> Feed: %v\n", user.Name, currentFeed.Url)
+	if err != nil {
+		fmt.Println("failed to fetch user associated with current feed")
+		return err
+	}
 	userState.db.MarkFeedFetched(context.Background(), currentFeed.ID)
 	rss, err := fetchFeed(context.Background(), currentFeed.Url)
 	if err != nil {
@@ -280,13 +302,20 @@ func scrapeFeeds(userState *configState, cmd command) error {
 	}
 	channel := rss.Channel
 	item := channel.Item
-	// fmt.Println("--- channel ---")
-	// fmt.Println(html.UnescapeString(channel.Title))
-	// fmt.Println(channel.Link)
-	// fmt.Println("--- items ---")
 	for _, value := range item {
-		fmt.Println(value.Title)
-		break
+		translated_time, err := time.Parse(time.RFC1123Z, value.PubDate)
+		if err != nil {
+			fmt.Println("failed to parse time from pub date")
+			return err
+		}
+		_, err = userState.db.CreatePost(context.Background(), database.CreatePostParams{Title: value.Title, Url: value.Link, Description: value.Description, PublishedAt: translated_time, FeedID: currentFeed.ID})
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				continue
+			}
+			fmt.Println("failed to create post")
+			return err
+		}
 	}
 	return nil
 }

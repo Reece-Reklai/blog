@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/Reece-Reklai/blog/internal"
 	"github.com/Reece-Reklai/blog/internal/database"
@@ -19,6 +20,7 @@ func main() {
 	cliHandler.register("reset", handlerReset)
 	cliHandler.register("feeds", handleUserFeed)
 	cliHandler.register("agg", scrapeFeeds)
+	cliHandler.register("browse", middlewareLoggedIn(handlerBrowse))
 	cliHandler.register("addfeed", middlewareLoggedIn(handlerAddFeed))
 	cliHandler.register("follow", middlewareLoggedIn(handlerFollow))
 	cliHandler.register("following", middlewareLoggedIn(handlerFollowing))
@@ -86,16 +88,35 @@ func main() {
 			fmt.Println(err)
 			os.Exit(1)
 		}
+	case "browse":
+		if len(arguments) != 2 {
+			fmt.Println("requires only command ... for ... now")
+			os.Exit(1)
+		}
+		err := cliHandler.run(&appState, userCommand)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
 	case "agg":
 		if len(arguments) != 3 {
 			fmt.Println("requires only command and duration string (1s, 1m, 1h) ")
 			os.Exit(1)
 		}
-		fmt.Println(userCommand.commandArgs[0])
-		err := cliHandler.run(&appState, userCommand)
+		timeBetweenRequests, err := time.ParseDuration(userCommand.commandArgs[0])
 		if err != nil {
-			fmt.Println(err)
+			fmt.Println("Invalid duration string")
 			os.Exit(1)
+		}
+		fmt.Printf("Collecting feeds every %v\n", timeBetweenRequests)
+		ticker := time.NewTicker(timeBetweenRequests)
+		defer ticker.Stop()
+		for ; ; <-ticker.C {
+			err = cliHandler.run(&appState, userCommand)
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
 		}
 	case "addfeed":
 		if len(arguments) != 4 {
