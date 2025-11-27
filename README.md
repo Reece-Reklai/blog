@@ -1,6 +1,6 @@
 # Gator
 
-A multi-player command line tool for aggregating RSS feeds and viewing the posts. Uses Postgress via sqlC + Golang SQL Standard Library. (No ORM) 
+A multi-player command line tool for aggregating RSS feeds and viewing the posts.
 
 ## Installation
 
