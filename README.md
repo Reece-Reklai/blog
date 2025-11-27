@@ -56,3 +56,4 @@ There are a few other commands you'll need as well:
 - `gator follow <url>` - Follow a feed that already exists in the database
 - `gator following <url>` - Shows the current feeds that the user is following 
 - `gator unfollow <url>` - Unfollow a feed that already exists in the database
+- `./goose.sh (up or down)` - Simple script to migate SQL schema up or down
